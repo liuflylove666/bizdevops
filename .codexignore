@@ -1,0 +1,21 @@
+# 忽略所有隐藏文件（如 .env, .git）
+.*
+
+# 忽略依赖包目录
+node_modules/
+vendor/
+__pycache__/
+
+# 忽略构建产物和日志
+*.log
+*.tmp
+
+# 忽略特定的敏感文件
+secrets.json
+config/database.yml
+
+# 忽略大型二进制文件
+*.zip
+
+# 允许特定文件（即使其父目录被忽略）
+!.env.example

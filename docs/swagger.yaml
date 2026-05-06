@@ -1,0 +1,21 @@
+basePath: /app/api/v1
+host: localhost:8080
+info:
+  contact:
+    email: support@devops.local
+    name: API Support
+  description: DevOps 平台 API 文档，提供 K8s、消息通知、告警等功能的接口
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: DevOps 统一运维平台 API
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    description: 输入 Bearer {token}
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

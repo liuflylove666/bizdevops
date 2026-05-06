@@ -1,0 +1,38 @@
+# --- 构建上下文瘦身（显著加快 docker build 上传与缓存失效范围）---
+
+# Git
+.git
+.gitattributes
+
+# 前端依赖。web/dist 默认作为预构建产物进入镜像，避免 Docker 内部 Vite 构建卡顿。
+web/node_modules
+web/.vite
+web/npm-debug.log*
+
+# 本地数据目录（体积大且不应进镜像）
+deploy/DevOpsData
+
+# 仅文档与路线图（不参与 Go/Vue 编译）
+docs/adr
+docs/roadmap
+docs/*.md
+
+# 截图、本地配置、IDE
+screenshots
+.env
+.vscode
+.idea
+.cursor
+.claude
+.trae
+.kiro
+
+# 日志与系统文件
+*.log
+.DS_Store
+**/.DS_Store
+
+# 杂项与 CI
+.github
+compile
+auto-hook-verify.txt

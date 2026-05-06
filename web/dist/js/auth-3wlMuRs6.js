@@ -1,0 +1,1 @@
+import{r as e}from"./app-pages-DfhksOlB.js";const o={login:(r,t)=>e.post("/auth/login",{username:r,password:t}),register:r=>e.post("/auth/register",r),getProfile:()=>e.get("/users/profile"),changePassword:r=>e.post("/users/change-password",r)};export{o as a};

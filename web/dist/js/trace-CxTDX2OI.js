@@ -1,0 +1,1 @@
+import{r as t}from"./app-pages-DfhksOlB.js";const a={getStatus:()=>t.get("/tracing/status"),listServices:()=>t.get("/tracing/services"),getServiceOperations:e=>t.get(`/tracing/services/${e}/operations`),queryTraces:e=>t.get("/tracing/traces",{params:e}),getTrace:e=>t.get(`/tracing/traces/${e}`),getTraceTree:e=>t.get(`/tracing/traces/${e}/tree`)};export{a as t};

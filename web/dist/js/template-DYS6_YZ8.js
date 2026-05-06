@@ -1,0 +1,1 @@
+import{r as e}from"./app-pages-DfhksOlB.js";const n={list:t=>e.get("/notification/templates",{params:t}),get:t=>e.get(`/notification/templates/${t}`),create:t=>e.post("/notification/templates",t),update:(t,i)=>e.put(`/notification/templates/${t}`,i),delete:t=>e.delete(`/notification/templates/${t}`),preview:t=>e.post("/notification/templates/preview",t)};export{n as t};

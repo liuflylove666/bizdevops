@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ui-runner-smoke-0505
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://host.docker.internal:8929/root/ui-runner-smoke-0505-gitops.git
+    targetRevision: main
+    path: charts/ui-runner-smoke-0505
+    helm:
+      valueFiles:
+        - values/dev.yaml
+      releaseName: ui-runner-smoke-0505
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: test
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

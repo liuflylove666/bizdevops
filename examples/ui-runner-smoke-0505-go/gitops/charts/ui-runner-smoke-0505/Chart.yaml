@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ui-runner-smoke-0505
+description: Helm chart for the ui-runner-smoke-0505 Go smoke app
+type: application
+version: 0.1.0
+appVersion: "dev"

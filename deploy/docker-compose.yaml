@@ -1,0 +1,275 @@
+#********************************************************************
+# 项目名称：DevOps
+# 文件名称：docker-compose.yaml
+# 创建时间：2026-04-14 22:33:28
+#
+# 系统用户：jerion
+# 作　　者：Jerion
+# 联系邮箱：416685476@qq.com
+# 功能描述：生产部署配置，包含 MySQL、Redis 与 DevOps 应用容器
+#           环境变量从根目录 .env 加载，数据通过卷持久化
+#********************************************************************
+
+services:
+  # ----------------------------------------------------------------
+  # MySQL 数据库容器
+  # ----------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: devops-mysql
+    restart: unless-stopped
+    networks:
+      - devops_network
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-charset.cnf:/etc/mysql/conf.d/charset.cnf:ro
+      - ../migrations/init_tables.sql:/docker-entrypoint-initdb.d/01-init_tables.sql:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-devops_local_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-devops}
+      TZ: Asia/Shanghai
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # ----------------------------------------------------------------
+  # Redis 缓存容器
+  # ----------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: devops-redis
+    restart: unless-stopped
+    networks:
+      - devops_network
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+    environment:
+      TZ: Asia/Shanghai
+    command: redis-server --appendonly yes
+
+  # ----------------------------------------------------------------
+  # Nacos（单机模式；平台内登记地址请用 http://nacos:8848）
+  # 默认账号密码：nacos / nacos
+  # ----------------------------------------------------------------
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    platform: linux/amd64
+    container_name: devops-nacos
+    restart: unless-stopped
+    networks:
+      - devops_network
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - nacos_data:/home/nacos/data
+      - nacos_logs:/home/nacos/logs
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-security}
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-VGhpcy1Jcy1Bbi1JbnRlZ3JhdGVkLU5hY29zLVRva2Vu}
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+      TZ: Asia/Shanghai
+
+  # ----------------------------------------------------------------
+  # GitLab（宿主机访问 http://localhost:8929，SSH 端口 2224）
+  # 平台内登记地址建议用 http://host.docker.internal:8929
+  # 默认 root 密码可通过 GITLAB_ROOT_PASSWORD 覆盖
+  # ----------------------------------------------------------------
+  gitlab:
+    image: gitlab/gitlab-ce:17.9.1-ce.0
+    platform: linux/amd64
+    container_name: devops-gitlab
+    restart: unless-stopped
+    hostname: gitlab
+    networks:
+      - devops_network
+    ports:
+      - "8929:80"
+      - "2224:22"
+    shm_size: "256m"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+      - ./gitlab-init-ci.sh:/usr/local/bin/jeridevops-init-gitlab-ci.sh:ro
+    environment:
+      TZ: Asia/Shanghai
+      GITLAB_RUNNER_REGISTRATION_TOKEN: ${GITLAB_RUNNER_REGISTRATION_TOKEN:-jeridevops-local-runner-token}
+      GITLAB_SHARED_RUNNERS_REGISTRATION_TOKEN: ${GITLAB_RUNNER_REGISTRATION_TOKEN:-jeridevops-local-runner-token}
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8929'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        gitlab_rails['time_zone'] = 'Asia/Shanghai'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2224
+        gitlab_rails['initial_root_password'] = 'F8v#Q4z!K7m@N2p%'
+        gitlab_rails['initial_shared_runners_registration_token'] = '${GITLAB_RUNNER_REGISTRATION_TOKEN:-jeridevops-local-runner-token}'
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - |
+        set -e
+        /assets/wrapper &
+        wrapper_pid=$$!
+        /bin/bash /usr/local/bin/jeridevops-init-gitlab-ci.sh &
+        init_pid=$$!
+        trap 'kill -TERM "$$wrapper_pid" "$$init_pid" 2>/dev/null || true; wait "$$wrapper_pid"' TERM INT
+        wait "$$wrapper_pid"
+
+  # ----------------------------------------------------------------
+  # GitLab Runner（本地 GitLab CI 构建执行器）
+  # 启动后自动注册到上方 GitLab；Docker executor 的 job 容器加入
+  # 当前 compose 网络，确保 CI 中可通过 http://gitlab 克隆仓库。
+  # ----------------------------------------------------------------
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine-v17.9.1
+    platform: linux/arm64
+    container_name: devops-gitlab-runner
+    restart: unless-stopped
+    networks:
+      - devops_network
+    volumes:
+      - gitlab_runner_config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      CI_SERVER_URL: http://gitlab
+      REGISTRATION_TOKEN: ${GITLAB_RUNNER_REGISTRATION_TOKEN:-jeridevops-local-runner-token}
+      RUNNER_NAME: jeridevops-local-runner
+      RUNNER_TAG_LIST: jeridevops,docker
+      REGISTER_NON_INTERACTIVE: "true"
+      REGISTER_RUN_UNTAGGED: "true"
+      REGISTER_LOCKED: "false"
+      RUNNER_EXECUTOR: docker
+      DOCKER_IMAGE: alpine:3.20
+      DOCKER_PRIVILEGED: "true"
+      DOCKER_NETWORK_MODE: ${COMPOSE_PROJECT_NAME:-jeridevops}_devops_network
+      CLONE_URL: http://gitlab
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        set -e
+        until wget -q -O /dev/null "$$CI_SERVER_URL/help"; do
+          sleep 5
+        done
+        if ! grep -q 'url = "http://gitlab"' /etc/gitlab-runner/config.toml 2>/dev/null; then
+          gitlab-runner register \
+            --non-interactive \
+            --url "$$CI_SERVER_URL" \
+            --registration-token "$$REGISTRATION_TOKEN" \
+            --executor "$$RUNNER_EXECUTOR" \
+            --docker-image "$$DOCKER_IMAGE" \
+            --description "$$RUNNER_NAME" \
+            --tag-list "$$RUNNER_TAG_LIST" \
+            --run-untagged="$$REGISTER_RUN_UNTAGGED" \
+            --locked="$$REGISTER_LOCKED" \
+            --clone-url "$$CLONE_URL" \
+            --docker-network-mode "$$DOCKER_NETWORK_MODE" \
+            --docker-extra-hosts "host.docker.internal:host-gateway" \
+            --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
+            --docker-privileged
+        fi
+        exec gitlab-runner run --user=gitlab-runner --working-directory=/home/gitlab-runner
+    depends_on:
+      gitlab:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------
+  # 轻量级本地 OCI 制品库 / Registry（Docker Registry v2）
+  #   - 宿主机访问地址：http://localhost:5001  （映射 container 5000 → host 5001）
+  #   - compose 网内服务访问：http://registry:5000  （服务名 registry，内部端口 5000）
+  #   - 容器名 devops-registry（与 deploy/kind-config.yaml 中 mirrors 配置一致）
+  # Kind 节点会通过容器网络回源到 devops-registry:5000
+  # ----------------------------------------------------------------
+  registry:
+    image: registry:2
+    container_name: devops-registry
+    restart: unless-stopped
+    networks:
+      - devops_network
+    ports:
+      - "5001:5000"
+    environment:
+      TZ: Asia/Shanghai
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - registry_data:/var/lib/registry
+
+  # ----------------------------------------------------------------
+  # DevOps 应用容器（前端 + 后端）
+  # ----------------------------------------------------------------
+  devops:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        # 默认复用宿主机 web/dist，避免 Docker Desktop 内部前端构建卡住。
+        # 如需强制镜像内构建前端：SKIP_WEB_BUILD=0 docker compose build devops
+        SKIP_WEB_BUILD: ${SKIP_WEB_BUILD:-1}
+    image: jeridevops:latest
+    container_name: devops
+    restart: unless-stopped
+    networks:
+      - devops_network
+    ports:
+      - 80:80
+    env_file:
+      - compose.docker.env
+    # 制品库：compose 内置 registry；容器内用 registry:5000（覆盖 compose.docker.env 中面向宿主机的写法）
+    environment:
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devops_local_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-devops}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET:-devops-local-change-me}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: ${PORT:-8080}
+      K8S_REGISTRY: ${K8S_REGISTRY:-registry:5000}
+    volumes:
+      - devops_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      registry:
+        condition: service_started
+
+networks:
+  devops_network:
+    name: ${COMPOSE_PROJECT_NAME:-jeridevops}_devops_network
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  nacos_data:
+  nacos_logs:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+  gitlab_runner_config:
+  registry_data:
+  devops_data:

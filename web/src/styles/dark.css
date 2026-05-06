@@ -1,0 +1,284 @@
+/* 深色模式样式 - 优化配色方案，与左侧栏渐变协调 */
+body.dark-mode {
+  --bg-color: #1a1f2e;
+  --bg-secondary: #242b3d;
+  --bg-tertiary: #2c3548;
+  --text-color: rgba(255, 255, 255, 0.9);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --border-color: #3a4558;
+  --primary-color: #4a9eff;
+  --hover-bg: rgba(74, 158, 255, 0.1);
+}
+
+body.dark-mode {
+  background: linear-gradient(135deg, #1a1f2e 0%, #242b3d 100%);
+  color: var(--text-color);
+}
+
+/* Ant Design 组件深色适配 */
+body.dark-mode .ant-layout {
+  background: transparent;
+}
+
+body.dark-mode .ant-layout-content {
+  background: transparent !important;
+}
+
+body.dark-mode .ant-layout-header {
+  background: linear-gradient(90deg, #242b3d 0%, #2c3548 100%) !important;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .ant-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .ant-card-head {
+  border-color: var(--border-color);
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+body.dark-mode .ant-table {
+  background: var(--bg-secondary);
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-table-thead > tr > th {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-color);
+  border-color: var(--border-color);
+  font-weight: 600;
+}
+
+body.dark-mode .ant-table-tbody > tr > td {
+  border-color: var(--border-color);
+}
+
+body.dark-mode .ant-table-tbody > tr:hover > td {
+  background: var(--hover-bg) !important;
+}
+
+body.dark-mode .ant-modal-content {
+  background: var(--bg-secondary);
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-modal-header {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .ant-modal-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-drawer-content {
+  background: var(--bg-secondary);
+}
+
+body.dark-mode .ant-drawer-header {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .ant-drawer-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-input {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-input:hover,
+body.dark-mode .ant-input:focus {
+  border-color: var(--primary-color);
+  background: var(--bg-secondary);
+}
+
+body.dark-mode .ant-select-selector {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-color) !important;
+}
+
+body.dark-mode .ant-select-dropdown {
+  background: var(--bg-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .ant-select-item {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-select-item-option-active {
+  background: var(--hover-bg);
+}
+
+body.dark-mode .ant-select-item-option-selected {
+  background: rgba(74, 158, 255, 0.2);
+  color: var(--primary-color);
+}
+
+body.dark-mode .ant-btn-default {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-btn-default:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--hover-bg);
+}
+
+body.dark-mode .ant-descriptions-item-label {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-descriptions-item-content {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-descriptions-bordered .ant-descriptions-item-label,
+body.dark-mode .ant-descriptions-bordered .ant-descriptions-item-content {
+  border-color: var(--border-color);
+  background: var(--bg-secondary);
+}
+
+body.dark-mode .ant-statistic-title {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-statistic-content {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-breadcrumb-link,
+body.dark-mode .ant-breadcrumb-separator {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-breadcrumb-link a {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-page-header {
+  background: transparent;
+}
+
+body.dark-mode .ant-page-header-heading-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-page-header-heading-sub-title {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-form-item-label > label {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-tabs-tab {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--primary-color);
+}
+
+body.dark-mode .ant-divider {
+  border-color: var(--border-color);
+}
+
+body.dark-mode .ant-empty-description {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-list-item {
+  border-color: var(--border-color);
+}
+
+body.dark-mode .ant-list-item-meta-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-list-item-meta-description {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .ant-popover-inner {
+  background: var(--bg-secondary);
+}
+
+body.dark-mode .ant-popover-message-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-dropdown-menu {
+  background: var(--bg-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .ant-dropdown-menu-item {
+  color: var(--text-color);
+}
+
+body.dark-mode .ant-dropdown-menu-item:hover {
+  background: var(--hover-bg);
+}
+
+/* 自定义组件适配 */
+body.dark-mode .batch-actions {
+  background: rgba(74, 158, 255, 0.15);
+  border-color: var(--primary-color);
+}
+
+body.dark-mode .favorite-dropdown {
+  background: var(--bg-secondary);
+}
+
+body.dark-mode .favorite-item:hover {
+  background: var(--hover-bg);
+}
+
+body.dark-mode .favorite-item-icon {
+  background: var(--bg-tertiary);
+}
+
+body.dark-mode .favorite-item-type {
+  color: var(--text-secondary);
+}
+
+/* 内容区域卡片样式优化 */
+body.dark-mode .ant-layout-content > div {
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Modal 和 Drawer 优化 */
+body.dark-mode .ant-modal-content {
+  background: var(--bg-secondary);
+  color: var(--text-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .ant-modal-header {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .ant-drawer-content {
+  background: var(--bg-secondary);
+}
+
+body.dark-mode .ant-drawer-header {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
