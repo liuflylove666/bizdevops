@@ -334,12 +334,13 @@ nohup npm run dev > web.log 2>&1 &
 
 ## 4.1 部署目录结构
 
-所有相关文件统一放在 `deploy/` 目录下，单镜像包含前端（Nginx）、后端（devops），通过 supervisord 管理多进程。仓库根目录提供 `docker-compose.yml`，用于在**项目根目录**执行一键启动（内部 `include` 引用 `deploy/docker-compose.yaml`）。
+所有相关文件统一放在 `deploy/` 目录下，单镜像包含前端（Nginx）、后端（devops），通过 supervisord 管理多进程。仓库根目录提供 `docker-compose.yml`，用于在**项目根目录**执行一键启动（内部 `include` 引用 `deploy/docker-compose.yaml`）。首次部署推荐直接执行 `sh deploy/start.sh`，脚本会自动生成本地 `.env` 默认配置并启动整套服务。
 
 ```bash
 ./
 ├── docker-compose.yml     # 根目录一键编排入口（include deploy/docker-compose.yaml）
 deploy/
+├── start.sh               # 一键生成本地 .env、构建镜像并启动所有服务
 ├── docker-compose.yaml    # 服务编排配置
 ├── compose.docker.env     # 容器内默认环境（含 mysql/redis 服务名，开箱即用）
 ├── mysql-charset.cnf      # MySQL utf8mb4 服务端与客户端配置（挂载到容器）
@@ -348,14 +349,47 @@ deploy/
 ├── nginx.conf             # Nginx 配置（含 charset utf-8）
 ├── supervisord.conf       # 进程管理配置
 ├── entrypoint.sh          # 容器启动脚本
-├── .env                   # 可选：在 deploy 目录执行 compose 时用于覆盖默认变量（见 4.2）
-├── DevOpsData/            # 应用持久化数据（首次启动自动创建）
-│   └── logs/              # 运行日志
-├── MySqlData/             # MySQL 数据（首次启动自动创建）
-└── redisData/             # Redis 数据（首次启动自动创建）
+└── .env                   # 可选：在 deploy 目录执行 compose 时用于覆盖默认变量（见 4.3）
 ```
 
-## 4.2 准备配置文件（可选）
+MySQL、Redis、Nacos、GitLab、Registry 与应用数据默认使用 Docker named volumes 持久化；查看方式：`docker volume ls | grep jeridevops`。
+
+## 4.2 一键生成配置（推荐）
+
+首次部署直接在仓库根目录执行：
+
+```bash
+sh deploy/start.sh
+```
+
+脚本会完成以下动作：
+
+- 检查 Docker 与 Docker Compose 是否可用
+- 若根目录 `.env` 不存在，自动生成一份本地默认配置
+- 校验 Compose 配置
+- 执行 `docker compose up -d --build`
+- 输出访问地址、默认账号和常用管理命令
+
+`.env` 已存在时脚本不会覆盖；如需修改端口、密码、JWT 等配置，编辑根目录 `.env` 后重新执行 `sh deploy/start.sh` 即可。
+
+常用可覆盖变量：
+
+```bash
+DEVOPS_HTTP_PORT=80
+MYSQL_HOST_PORT=3306
+REDIS_HOST_PORT=6379
+NACOS_HTTP_PORT=8848
+GITLAB_HTTP_PORT=8929
+GITLAB_SSH_PORT=2224
+REGISTRY_HOST_PORT=5001
+
+MYSQL_PASSWORD=devops_local_root
+MYSQL_DATABASE=devops
+JWT_SECRET=devops-local-change-me
+GITLAB_ROOT_PASSWORD=F8v#Q4z!K7m@N2p%
+```
+
+## 4.3 配置文件说明
 
 默认已提供 `deploy/compose.docker.env`（含 `MYSQL_HOST=mysql`、`REDIS_ADDR=redis:6379` 等），**无需复制 `.env` 即可启动**。首次启动时，MySQL 会在空数据目录下自动执行 `migrations/init_tables.sql` 完成建表与初始数据（管理员 `admin` / `admin123`）。
 
@@ -383,7 +417,7 @@ LOG_LEVEL=info
 
 也可直接编辑 `deploy/compose.docker.env`（不推荐提交敏感信息到 Git）。
 
-## 4.3 构建镜像（可选）
+## 4.4 构建镜像（可选）
 
 如果不想使用阿里云镜像仓库的镜像，可直接在本地手动构建（默认使用阿里云镜像仓库地址）：
 
@@ -395,25 +429,24 @@ docker build -t devops:latest -f Dockerfile ..
 
 然后修改 `deploy/docker-compose.yaml` 中 `devops` 服务的 `image` 字段为 `devops:latest`。
 
-## 4.4 启动服务
+## 4.5 启动服务
 
-**推荐：在仓库根目录一键构建并后台启动**
+**推荐：在仓库根目录一键配置、构建并后台启动**
+
+```bash
+sh deploy/start.sh
+```
+
+已有 `.env` 且只想直接启动时，也可以使用 Compose：
+
+```bash
+docker compose up -d --build
+```
+
+`docker-compose` 老版本写法同样可用：
 
 ```bash
 docker-compose up -d --build
-```
-
-或使用 Compose 插件写法：
-
-```bash
-docker compose up -d --build
-```
-
-等价地，也可进入 `deploy` 目录后启动（无需根目录的 `docker-compose.yml`）：
-
-```bash
-cd deploy
-docker compose up -d --build
 ```
 
 `docker-compose.yaml` 还支持按需切换为「使用已有 MySQL/Redis」：
@@ -431,7 +464,7 @@ docker compose up -d --build
 
 然后在 `deploy/` 或仓库根目录执行 `docker compose up -d`（按需加 `--build`）。
 
-## 4.5 从零重新部署（0-1，清空本地持久化）
+## 4.6 从零重新部署（0-1，清空本地持久化）
 
 适用于你已手动 `docker-compose down` 或希望**完全丢弃**当前 MySQL / Redis / 应用本地数据后，再按 `init_tables.sql` 全新初始化（与「升级存量库」不同，见 [migrations/README.md](migrations/README.md)）。
 
@@ -439,19 +472,18 @@ docker compose up -d --build
 
 ```bash
 docker-compose down
-rm -rf deploy/MySqlData deploy/redisData deploy/DevOpsData
-mkdir -p deploy/MySqlData deploy/redisData deploy/DevOpsData
-docker-compose up -d --build
+docker-compose down -v
+sh deploy/start.sh
 ```
 
 使用 Compose 插件时，将上述 `docker-compose` 换成 `docker compose` 即可。
 
 **说明**：
 
-- `deploy/MySqlData` 为空时，MySQL 容器才会执行 `docker-entrypoint-initdb.d` 下的 `init_tables.sql`；若目录里已有旧数据文件，仅 `up` 不会重复跑初始化脚本。
-- 若只想**重建数据库、不动 Redis/应用挂载目录**，可在根目录执行：`sh deploy/reinit-mysql-data.sh`（会停掉 `mysql`/`devops`、删除 `deploy/MySqlData` 后重新拉起；等待 MySQL 就绪时使用环境变量 `MYSQL_PASSWORD`，未设置则默认为 `devops_local_root`，与 `compose.docker.env` 一致。若你在 `.env` 中覆盖了数据库密码，请先 `export MYSQL_PASSWORD=...` 再执行脚本）。
+- MySQL named volume 为空时，MySQL 容器才会执行 `docker-entrypoint-initdb.d` 下的 `init_tables.sql`；若 volume 里已有旧数据文件，仅 `up` 不会重复跑初始化脚本。
+- 若只想**重建数据库、不动 Redis/应用数据卷**，可在根目录执行：`sh deploy/reinit-mysql-data.sh`（会停掉 `mysql`/`devops`、删除 Compose 管理的 MySQL volume 后重新拉起；等待 MySQL 就绪时使用环境变量 `MYSQL_PASSWORD`，未设置则默认为 `devops_local_root`，与 `compose.docker.env` 一致。若你在 `.env` 中覆盖了数据库密码，请先 `export MYSQL_PASSWORD=...` 再执行脚本）。
 
-## 4.6 服务管理
+## 4.7 服务管理
 
 ```bash
 # 查看服务状态
@@ -470,7 +502,7 @@ docker compose down
 docker compose down -v
 ```
 
-## 4.7 访问系统
+## 4.8 访问系统
 
 服务启动后，访问以下地址：
 

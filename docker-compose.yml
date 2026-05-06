@@ -1,8 +1,9 @@
-# 在仓库根目录一键启动：docker compose up -d --build
+# 在仓库根目录一键配置并启动：sh deploy/start.sh
+# 已有 .env 时也可直接启动：docker compose up -d --build
 # 实际编排见 deploy/docker-compose.yaml（路径相对于该文件解析）
 #
 # 制品库 / OCI Registry（与 deploy 中 registry 服务对应）：
-#   - 宿主机、浏览器、本机 docker push：http://localhost:5001（映射到容器内 5000）
+#   - 宿主机、浏览器、本机 docker push：http://localhost:${REGISTRY_HOST_PORT:-5001}（映射到容器内 5000）
 #   - compose 网络内其它服务（如 devops 后端）：registry:5000（服务名 + 容器内端口）
 #   - 环境变量 K8S_REGISTRY 默认值在 deploy/docker-compose.yaml 的 devops.environment 中
 include:
